@@ -1,0 +1,39 @@
+name: Deploy-ARM-Templates
+
+on:
+  workflow_dispatch
+
+env:
+  AZURE_SUBSCRIPTION_ID: e7ed29e6-0031-41df-9459-350924289c6a   # set this to your Azure Subscription Id
+  AZURE_RESOURCE_GROUP: GitHubAction-rg
+
+jobs:
+  build: 
+    runs-on: ubuntu-latest
+    name: 'Build & Validate'
+    steps:
+      - uses: actions/checkout@v3
+        name: Checkout Azure Repo
+        with:
+          repository: 'https://zohairamravatiwala@dev.azure.com/zohairamravatiwala/Azure_Cloud_Learning/_git/Azure_Resource_Deployments'
+          token: ${{ secrets.ADO_TOKEN }}
+      
+      # - name: Login to Azure
+      #   uses: azure/login@v1
+      #   with:
+      #     creds: ${{ secrets.AZURE_CREDENTIALS }}
+      
+      # - name: Validate ARM Template
+      #   uses: azure/arm-deploy@v1
+      #   with:
+      #     scope: resourcegroup
+      #     subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
+      #     resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+      #     deploymentMode: Validate
+      #     template: /Azure_Resources/Azure_App_Service/ARM/template.json
+
+        
+          
+
+
+  
