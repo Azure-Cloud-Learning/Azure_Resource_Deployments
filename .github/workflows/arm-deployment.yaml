@@ -15,7 +15,7 @@ jobs:
       - uses: actions/checkout@v3
         name: Checkout Azure Repo
         with:
-          repository: 'https://zohairamravatiwala@dev.azure.com/zohairamravatiwala/Azure_Cloud_Learning/_git/Azure_Resource_Deployments'
+          repository: 'Azure_Cloud_Learning/Azure_Resource_Deployments'
           token: ${{ secrets.ADO_TOKEN }}
       
       # - name: Login to Azure
