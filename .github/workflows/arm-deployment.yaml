@@ -1,7 +1,12 @@
 name: Deploy-ARM-Templates
 
 on:
-  workflow_dispatch
+  push:
+    branches:    
+      - 'main'
+      
+  workflow_dispatch:
+    
 
 env:
   AZURE_SUBSCRIPTION_ID: e7ed29e6-0031-41df-9459-350924289c6a   # set this to your Azure Subscription Id
@@ -38,6 +43,11 @@ jobs:
           deploymentMode: Validate
           template: ./Azure_Resources/Azure_App_Service/ARM/template.json
           parameters: ./Azure_Resources/Azure_App_Service/ARM/parameters.json
+          
+      - uses: actions/upload-artifact@v3
+        with:
+          name: arm-templates
+          path: ./Azure_Resources/Azure_App_Service/ARM/
 
         
           
