@@ -16,7 +16,7 @@ env:
 jobs:
   build: 
     runs-on: ubuntu-latest
-    environment: Dev
+    # environment: Dev
     name: 'Build & Validate'
     steps:
       - uses: actions/checkout@v3
@@ -48,14 +48,37 @@ jobs:
         with:
           name: arm-templates
           path: ./Azure_Resources/Azure_App_Service/ARM/
-      
+
+
+  deploy_dev:
+    runs-on: ubuntu-latest
+    environment: Dev
+    name: 'Deploy Dev'
+    steps:
       - name: Download a Build Artifact
         uses: actions/download-artifact@v3.0.0
         with:
-          # Artifact name
-          name: # optional
-          # Destination path
-          path: # optional
+          name: arm-templates
+      
+      - uses: Azure/CLI@v1
+        with:
+          inlineScript: |
+            #!/bin/bash
+            az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ env.AZURE_LOCATION }}
+            echo "Azure resource group created"
+      
+      - name: Validate ARM Template
+        uses: azure/arm-deploy@v1
+        with:
+          scope: resourcegroup
+          subscriptionId: ${{ env.AZURE_SUBSCRIPTION_ID }}
+          resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
+          deploymentMode: Incremental
+          template: ./template.json
+          parameters: ./parameters.json
+          
+
+      
 
 
         
