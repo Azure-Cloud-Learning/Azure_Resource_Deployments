@@ -52,6 +52,7 @@ jobs:
 
   deploy_dev:
     runs-on: ubuntu-latest
+    needs: [build]
     environment: Dev
     name: 'Deploy Dev'
     steps:
