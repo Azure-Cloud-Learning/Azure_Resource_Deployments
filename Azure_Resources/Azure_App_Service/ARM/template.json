@@ -1,0 +1,93 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "asp_name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of App service plan."
+      }
+    },
+    "asp_sku": {
+      "type": "string",
+      "metadata": {
+        "description": "SKU for app service plan"
+      },
+      "defaultValue": "F1",
+      "allowedValues": ["F1", "D1", "B1", "B2"]
+    },
+    "tags": {
+      "type": "object",
+      "metadata": {
+        "description": "Tags for Azure resources"
+      }
+    },
+    "asp_kind": {
+      "type": "string",
+      "metadata": {
+        "description": "Kind of App service plan."
+      },
+      "allowedValues": ["Windows", "Linux"],
+      "defaultValue": "Linux"
+    },
+    "asp_reserved": {
+      "type": "bool",
+      "metadata": {
+        "description": "Reserved if Linux ASP."
+      },
+      "defaultValue": true
+    },
+    "app_name": {
+      "type": "string",
+      "metadata": {
+        "description": "Name of App Service."
+      }
+    },
+    "app_linuxFxVersion": {
+      "type": "string",
+      "defaultValue": "DOTNETCORE|3.0",
+      "metadata": {
+        "description": "The Runtime stack of current web app. #az webapp list-runtimes"
+      }
+    }
+  },
+  "resources": [
+    {
+      "name": "[parameters('asp_name')]",
+      "type": "Microsoft.Web/serverfarms",
+      "apiVersion": "2021-03-01",
+      "location": "[resourceGroup().location]",
+      "sku": {
+        "name": "[parameters('asp_sku')]",
+        "capacity": 1
+      },
+      "tags": "[parameters('tags')]",
+      "kind": "[parameters('asp_kind')]",
+      "properties": {
+        "name": "[parameters('asp_name')]",
+        "reserved": "[parameters('asp_reserved')]"
+      }
+    },
+    {
+      "name": "[parameters('app_name')]",
+      "type": "Microsoft.Web/sites",
+      "apiVersion": "2020-06-01",
+      "location": "[resourceGroup().location]",
+      "tags": "[parameters('tags')]",
+      "dependsOn": [
+        "[resourceId('Microsoft.Web/serverfarms', parameters('asp_name'))]"
+      ],
+      "properties": {
+        "name": "[parameters('app_name')]",
+        "httpsOnly": true,
+        "serverFarmId": "[resourceId('Microsoft.Web/serverfarms', parameters('asp_name'))]",
+        "siteConfig": {
+          "linuxFxVersion": "[parameters('app_linuxFxVersion')]",
+          "minTlsVersion": "1.2",
+          "ftpsState": "disabled"
+        }
+      }
+    }
+  ],
+  "outputs": {}
+}

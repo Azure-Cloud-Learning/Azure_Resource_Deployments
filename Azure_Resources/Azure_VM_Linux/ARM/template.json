@@ -1,0 +1,217 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "virtualMachine_name": {
+            "type": "string",
+            "metadata": {
+                "description": "Name of virtual machine"
+            },
+            "defaultValue": "LinuxVM"
+        },
+        "virtualMachine_size": {
+            "type": "string",
+            "metadata": {
+                "description": "Size of virtual machine"
+            },
+            "defaultValue": "Standard_B2s"
+        },
+        "adminUsername": {
+            "type": "string",
+            "metadata": {
+                "description": "Admin username"
+            },
+            "defaultValue": "zohair"
+        },
+        "adminPassword": {
+            "type": "string",
+            "metadata": {
+                "description": "Password for Admin User"
+            },
+            "defaultValue": "Azurevm@12101994"
+        }
+        // "adminPassword": {
+        //     "type": "securestring"
+        // },
+    },
+    "functions": [],
+    "variables": {},
+    "resources": [
+        {
+            "name": "[concat(parameters('virtualMachine_name'),'-PublicIP')]",
+            "type": "Microsoft.Network/publicIPAddresses",
+            "apiVersion": "2019-11-01",
+            "location": "[resourceGroup().location]",
+            "tags": {
+                "displayName": "PublicIPAddress"
+            },
+            "sku": {
+                "name": "Basic"
+            },
+            "properties": {
+                "publicIPAllocationMethod": "static",
+                "publicIPAddressVersion": "IPv4"
+                
+            }
+        },
+        {
+            "name": "[concat(parameters('virtualMachine_name'),'-nsg')]",
+            "type": "Microsoft.Network/networkSecurityGroups",
+            "apiVersion": "2018-08-01",
+            "location": "[resourceGroup().location]",
+            "properties": {
+                "securityRules": [
+                    {
+                        "name": "SSH",
+                        "properties": {
+                            "description": "SSH port",
+                            "protocol": "Tcp",
+                            "sourcePortRange": "*",
+                            "destinationPortRange": "22",
+                            "sourceAddressPrefix": "*",
+                            "destinationAddressPrefix": "*",
+                            "access": "Allow",
+                            "priority": 100,
+                            "direction": "Inbound"
+                        }
+                    } 
+                ]
+            }
+        },
+        {
+            "name": "[concat(parameters('virtualMachine_name'),'-VirtualNetwork')]",
+            "type": "Microsoft.Network/virtualNetworks",
+            "apiVersion": "2019-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('virtualMachine_name'),'-nsg'))]"
+            ],
+            "tags": {
+                "displayName": "[concat(parameters('virtualMachine_name'),'-VirtualNetwork')]"
+            },
+            "properties": {
+                "addressSpace": {
+                    "addressPrefixes": [
+                        "10.0.0.0/24"
+                    ]
+                },
+                "subnets": [
+                    {
+                        "name": "default",
+                        "properties": {
+                            "addressPrefix": "10.0.1.0/24",
+                            "networkSecurityGroup": {
+                                "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('virtualMachine_name'),'-nsg'))]"
+                            }
+                        }
+                    }
+                ]
+            }
+        },
+        {
+            "name": "[concat(parameters('virtualMachine_name'),'-NetworkInterface')]",
+            "type": "Microsoft.Network/networkInterfaces",
+            "apiVersion": "2019-11-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/publicIPAddresses', concat(parameters('virtualMachine_name'),'-PublicIP'))]",
+                "[resourceId('Microsoft.Network/virtualNetworks/subnets', concat(parameters('virtualMachine_name'),'-VirtualNetwork'),'default')]",
+                "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('virtualMachine_name'),'-nsg'))]"
+            ],
+            "tags": {
+                "displayName": "[concat(parameters('virtualMachine_name'),'-NetworkInterface')]"
+            },
+            "properties": {
+                "ipConfigurations": [
+                    {
+                        "name": "ipConfig1",
+                        "properties": {
+                            "privateIPAllocationMethod": "Dynamic",
+                            "publicIPAddress": {
+                                "id": "[resourceId('Microsoft.Network/publicIPAddresses', concat(parameters('virtualMachine_name'),'-PublicIP'))]"
+                            },
+                            "subnet": {
+                                "id": "[resourceId('Microsoft.Network/virtualNetworks/subnets', concat(parameters('virtualMachine_name'),'-VirtualNetwork'),'default')]"
+                            }
+                        }
+                    }
+                ],
+                "networkSecurityGroup": {
+                    "id": "[resourceId('Microsoft.Network/networkSecurityGroups', concat(parameters('virtualMachine_name'),'-nsg'))]"
+                }
+            }
+        },
+        {
+            "name": "[parameters('virtualMachine_name')]",
+            "type": "Microsoft.Compute/virtualMachines",
+            "apiVersion": "2019-07-01",
+            "location": "[resourceGroup().location]",
+            "dependsOn": [
+                "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('virtualMachine_name'),'-NetworkInterface'))]"
+            ],
+            "tags": {
+                "displayName": "[parameters('virtualMachine_name')]"
+            },
+            "properties": {
+                "hardwareProfile": {
+                    "vmSize": "[parameters('virtualMachine_size')]"
+                },
+                "osProfile": {
+                    "computerName": "[parameters('virtualMachine_name')]",
+                    "adminUsername": "[parameters('adminUsername')]",
+                    "adminPassword": "[parameters('adminPassword')]"
+                },
+                "storageProfile": {
+                    "imageReference": {
+                        "publisher": "Canonical",
+                        "offer": "UbuntuServer",
+                        "sku": "18.04-LTS",
+                        "version": "latest"
+                    },
+                    "osDisk": {
+                        "osType": "Linux",
+                        "name": "[concat(parameters('virtualMachine_name'), '_OsDisk_1')]",
+                        "caching": "ReadWrite",
+                        "createOption": "FromImage",
+                        "managedDisk": {
+                            "storageAccountType": "StandardSSD_LRS"
+                        }
+                    }
+                },
+                "networkProfile": {
+                    "networkInterfaces": [
+                        {
+                            "id": "[resourceId('Microsoft.Network/networkInterfaces', concat(parameters('virtualMachine_name'),'-NetworkInterface'))]"
+                        }
+                    ]
+                }
+ 
+            }
+        },
+         {
+            "type": "microsoft.devtestlab/schedules",
+            "apiVersion": "2018-09-15",
+            "name": "[concat(parameters('virtualMachine_name'),'-shutdown')]",
+            "location": "southeastasia",
+            "dependsOn": [
+                "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachine_name'))]"
+            ],
+            "properties": {
+                "status": "Enabled",
+                "taskType": "ComputeVmShutdownTask",
+                "dailyRecurrence": {
+                    "time": "2200"
+                },
+                "timeZoneId": "India Standard Time",
+                "notificationSettings": {
+                    "status": "Disabled",
+                    "timeInMinutes": 30,
+                    "notificationLocale": "en"
+                },
+                "targetResourceId": "[resourceId('Microsoft.Compute/virtualMachines', parameters('virtualMachine_name'))]"
+            }
+        }
+        
+    ],
+    "outputs": {}
+}

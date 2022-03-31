@@ -1,0 +1,30 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "asp_name": {
+            "value": "arm-pipeline-asp-mnvb" 
+        },
+        "asp_sku": {
+            "value": "F1"
+        },
+        "tags": {
+            "value": {
+                "env": "test",
+                "createdby": "arm-pipeline"
+            }
+        },
+        "asp_kind": {
+            "value": "Linux"
+        },
+        "asp_reserved": {
+            "value": true
+        },
+        "app_name": {
+            "value": "arm-pipeline-app-mnvb" 
+        },
+        "app_linuxFxVersion": {
+            "value": "DOTNETCORE|3.0"
+        }
+    }
+}
