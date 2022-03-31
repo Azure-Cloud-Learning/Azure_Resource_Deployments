@@ -6,6 +6,7 @@ on:
 env:
   AZURE_SUBSCRIPTION_ID: e7ed29e6-0031-41df-9459-350924289c6a   # set this to your Azure Subscription Id
   AZURE_RESOURCE_GROUP: GitHubAction-rg
+  AZURE_LOCATION: westeurope
 
 jobs:
   build: 
@@ -21,6 +22,13 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
       
+      - uses: Azure/CLI@v1
+        with:
+          inlineScript: |
+            #!/bin/bash
+            az group create --name ${{ env.AZURE_RESOURCE_GROUP }} --location ${{ env.AZURE_LOCATION }}
+            echo "Azure resource group created"
+      
       - name: Validate ARM Template
         uses: azure/arm-deploy@v1
         with:
@@ -29,6 +37,7 @@ jobs:
           resourceGroupName: ${{ env.AZURE_RESOURCE_GROUP }}
           deploymentMode: Validate
           template: ./Azure_Resources/Azure_App_Service/ARM/template.json
+          parameters: ./Azure_Resources/Azure_App_Service/ARM/parameters.json
 
         
           
