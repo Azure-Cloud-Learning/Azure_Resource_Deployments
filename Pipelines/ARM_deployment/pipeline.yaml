@@ -1,0 +1,99 @@
+###################################################################################################
+# Pipeline - ARM template Deployment pipeline
+# Description - Deploys Azure resources using ARM template validating and checking security aspects.
+# CreatedBy - Zohair Amrvatiwala
+###################################################################################################
+
+---
+
+name: $(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+parameters:
+- name: resource
+  type: string
+  default: 'Azure_App_Service'
+- name: basePath
+  type: string
+  default: '$(System.DefaultWorkingDirectory)/Azure_Resources'
+
+stages:
+  - stage: Dev
+    variables:
+    - name: templateFile
+      value: '${{ parameters.basepath }}/${{ parameters.resource }}/ARM/template.json'
+    - name: parameterFile
+      value: '${{ parameters.basepath }}/${{ parameters.resource }}/ARM/parameters.json'
+    - name: resourceGroup
+      value: 'ADO-rg'
+    - name: serviceConnection
+      value: 'Visual Studio Enterprise – MPN (e7ed29e6-0031-41df-9459-350924289c6a)'
+    - name: location
+      value: westeurope
+    jobs:
+    - job: 'BuildValidate'
+      displayName: Build & Validate template
+      steps:
+      - checkout: self
+      - powershell: |
+          echo ${{ parameters.basepath }}
+          echo ${{ parameters.resource }}
+
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: Validate ARM template
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: ${{variables.serviceConnection}}
+          subscriptionId: 'e7ed29e6-0031-41df-9459-350924289c6a'
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: '${{variables.resourceGroup}}'
+          location: '${{variables.location}}'
+          templateLocation: 'Linked artifact'
+          csmFile: '${{variables.templateFile}}'
+          csmParametersFile: '${{variables.parameterFile}}'
+          deploymentMode: 'Validation'
+
+      - task: AzureCLI@2
+        displayName: WhatIf Deployment
+        inputs:
+          azureSubscription: ${{variables.serviceConnection}}
+          scriptType: 'pscore'
+          scriptLocation: 'inlineScript'
+          inlineScript: |
+            az deployment group create -w --parameters  ${{variables.parameterFile}} --resource-group ${{variables.resourceGroup}} --template-file ${{variables.templateFile}}
+      
+      - task: PublishBuildArtifacts@1
+        displayName: Publish Template
+        inputs:
+          PathtoPublish: '${{ parameters.basepath }}/${{ parameters.resource }}/ARM'
+          ArtifactName: 'drop'
+          publishLocation: 'Container'
+      
+    - job: 'Deploy_Dev'
+      displayName: Deploy ARM Template
+      dependsOn: []
+      steps:
+      
+      - checkout: none
+
+      - download: current  # refers to artifacts published by current pipeline
+        artifact: drop
+        patterns: '**'
+        displayName: Download artifacts
+      - task: AzureResourceManagerTemplateDeployment@3
+        displayName: Validate ARM template
+        inputs:
+          deploymentScope: 'Resource Group'
+          azureResourceManagerConnection: '${{variables.serviceConnection}}'
+          subscriptionId: 'e7ed29e6-0031-41df-9459-350924289c6a'
+          action: 'Create Or Update Resource Group'
+          resourceGroupName: '${{variables.resourceGroup}}'
+          location: '${{variables.location}}'
+          templateLocation: 'Linked artifact'
+          csmFile: '$(Pipeline.Workspace)/drop/template.json'
+          csmParametersFile: '$(Pipeline.Workspace)/drop/parameters.json'
+          deploymentMode: 'Incremental'

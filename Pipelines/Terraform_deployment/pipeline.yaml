@@ -1,0 +1,91 @@
+######################################################################
+# Pipeline - ARM template Deployment pipeline
+# Description - Deploys Azure resources using ARM template validating and checking security aspects.
+# CreatedBy - Zohair Amrvatiwala
+#######################################################################
+
+---
+
+name: $(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+trigger: none
+
+pool:
+  vmImage: 'ubuntu-latest'
+
+parameters:
+- name: resource
+  type: string
+  default: 'Azure_App_Service'
+  displayName: Resource
+- name: basePath
+  type: string
+  default: '$(System.DefaultWorkingDirectory)/Azure_Resources'
+  displayName: Base Path
+- name: tfVersion
+  type: string
+  default: 1.1.7
+  displayName: Terraform Version
+- name: tfPlanOnly
+  displayName: Run Terraform Plan only
+  type: boolean
+  default: true
+
+variables:
+- name: tfDirName
+  value: '${{ parameters.basepath }}/${{ parameters.resource }}/Terraform'
+- name: variableFile
+  value: '${{ parameters.basepath }}/${{ parameters.resource }}/Terraform/terraform.tfvars'
+- name: resourceGroup
+  value: 'ADO-rg'
+- name: serviceConnection
+  value: 'Visual Studio Enterprise – MPN (e7ed29e6-0031-41df-9459-350924289c6a)'
+- name: location
+  value: westeurope
+
+stages:
+  - stage: Dev
+    jobs:
+      - job: Deploy_Resources
+        steps:
+          - task: AzureCLI@2
+            displayName: Configure TF backend
+            inputs:
+              azureSubscription: ${{ variables.serviceConnection }}
+              scriptType: 'pscore'
+              scriptLocation: 'scriptPath'
+              scriptPath: 'Scripts/configure_terraform_backend.ps1'
+        
+          - task: TerraformInstaller@0
+            displayName: Install Terrfaorm
+            inputs:
+              terraformVersion: ${{ parameters.tfVersion }}
+        
+          - task: AzureCLI@2
+            displayName: Terraform plan and apply
+            inputs:
+             azureSubscription: ${{ variables.serviceConnection }}
+             scriptType: bash
+             addSpnToEnvironment: true
+             scriptLocation: inlineScript
+             inlineScript: |
+               echo "##[command]Export variables"
+               export ARM_TENANT_ID=$tenantId #get tenant Id from env variables
+               export ARM_SUBSCRIPTION_ID=$(az account show --query 'id' --output tsv)
+               export ARM_CLIENT_ID=$servicePrincipalId
+               export ARM_CLIENT_SECRET=$servicePrincipalKey
+               echo "##[command]Run Terraform init"
+               terraform -chdir=${{ variables.tfDirName }} init -input=false -backend-config="resource_group_name=$(TF_Backend_RG)" -backend-config="storage_account_name=$(TF_Backend_StorageAcc_Name)" -backend-config="container_name=$(TF_Backend_Container_Name)" -backend-config="key='$(Build.DefinitionName)/terraform.tfstate'"
+               echo "##[command]Run Terraform plan"
+               terraform -chdir=${{ variables.tfDirName }} plan -input=false -out=tfPlan
+               if [ '${{ parameters.tfPlanOnly }}' == 'False' ];
+               then
+                echo "##[command]Run Terraform apply"
+                terraform -chdir=${{ variables.tfDirName }} apply -input=false -auto-approve tfPlan
+
+               else
+
+                echo "Pipeline was executed in 'plan only' mode. To apply changes uncheck the 'Run Terraform plan only' parameter when running the pipeline."
+
+               fi
+

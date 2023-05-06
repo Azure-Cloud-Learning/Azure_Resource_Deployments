@@ -1,0 +1,209 @@
+######################################################################
+# Pipeline - ADO pipeline schema
+# Description - Generalized schema of ADO pipeline
+# CreatedBy - Zohair Amrvatiwala
+#######################################################################
+
+---
+# Name of build run.
+# name: $(TeamProject)_$(Build.DefinitionName)_$(SourceBranchName)_$(Date:yyyyMMdd)$(Rev:.r)
+
+# region Types of triggers.
+
+# Disable CI triggers.
+# trigger: none 
+# Triggers on push on specific branches.
+# trigger:
+# - main
+# - dev
+
+# Full syntax for CI trigger
+# trigger:
+#   batch: boolean # Whether to batch changes per branch.  (false,n,no,off,on,true,y,yes)
+#   branches:  # Branch names to include or exclude for triggering a run.
+#     include: [ branchFilter ] # List of items to include. 
+#     exclude: [ branchFilter ] # List of items to exclude. 
+#   paths:  # File paths to include or exclude for triggering a run.
+#     include: [ branchFilter ] # List of items to include. 
+#     exclude: [ branchFilter ] # List of items to exclude. 
+#   tags:  # Tag names to include or exclude for triggering a run.
+#     include: [ branchFilter ] # List of items to include. 
+#     exclude: [ branchFilter ] # List of items to exclude.
+
+# PR triggers
+# pr: none # Disable PR trigger
+# pr:
+#   autoCancel: boolean # Whether to cancel running PR builds when a new commit lands in the branch.  (false,n,no,off,on,true,y,yes)
+#   branches:  # Branch names to include or exclude for triggering a run.
+#     include: [ branchFilter ] # List of items to include. 
+#     exclude: [ branchFilter ] # List of items to exclude. 
+#   paths:  # File paths to include or exclude for triggering a run.
+#     include: [ branchFilter ] # List of items to include. 
+#     exclude: [ branchFilter ] # List of items to exclude. 
+#   drafts: boolean # Whether to start a run when a draft PR is created.  (false,n,no,off,on,true,y,yes)
+
+# Schedule triggers
+# schedules:
+# - cron: string # Required as first property. Cron syntax defining a schedule in UTC time.. 
+#   displayName: string # Optional friendly name given to a specific schedule.. 
+#   branches:  # Branch names to include or exclude for triggering a run.
+#     include: [ branchFilter ] # List of items to include. 
+#     exclude: [ branchFilter ] # List of items to exclude. 
+#   batch: boolean # Whether to run the pipeline if the previously scheduled run is in-progress; the default is false..  (false,n,no,off,on,true,y,yes)
+#   always: boolean # Whether to always run the pipeline or only if there have been source code changes since the last successful scheduled run; the default is false..  (false,n,no,off,on,true,y,yes)
+
+# endregion
+
+# region Agent pool configuration
+
+# Configuration of pool can be set-up on pipeline scope or Job scope.
+# Agent on which build runs.
+
+ pool:
+  vmImage: 'ubuntu-latest'
+
+# Self hosted Agents
+# pool:
+#   name: MyPool
+#   demands:
+#   - myCustomCapability   # exists check for myCustomCapability
+#   - Agent.Version -equals 2.144.0 # equals check for Agent.Version 2.144.0
+
+# endregion
+
+# region Parameter
+
+# The parameters list specifies the runtime parameters passed to a pipeline.
+# Used in pipeline as ${{ parameters.<parameterName> }}
+# parameters:
+# - name: string          # name of the parameter; required
+#   type: enum            # see the enum data types in the following section
+#   default: any          # default value; if no default, then the parameter MUST be given by the user at runtime
+#   values: [ string ]    # allowed list of values (for some data types)
+# endregion
+
+# region Variables
+# Define variables to use in your pipeline. It can be defined at different scopes
+# Used in pipeline as ${{ variables.<variableName> }}
+# variables:
+#   string: string # Name/value pairs.
+
+# Mapping syntax 
+# variables: { string: string }
+
+# Combination of name/value pair, variable group & temaplates.
+# variables:
+# - name: string  # name of a variable
+#   value: string # value of the variable
+#   readonly: true
+# - group: string # name of a variable group
+# - template: vars.yml  # Template reference
+
+# endregion
+
+# region Stages
+
+# stages:
+# - stage: string # Required as first property. ID of the stage. 
+#   displayName: string # Human-readable name for the stage. 
+#   pool: pool # Pool where jobs in this stage will run unless otherwise specified
+#   dependsOn: string | [ string ]  # Any stages which must complete before this one
+#   condition: string # Evaluate this condition expression to determine whether to run this stage. 
+#   variables: variables # Stage-specific variables
+#   jobs: [ job | deployment | template ]
+#   lockBehavior: string # Behavior lock requests from this stage should exhibit in relation to other exclusive lock requests.  (runLatest,sequential)
+
+# stages:
+# - template: string # Required as first property. Reference to a template for this stage. 
+#   parameters:  # Parameters used in a stage template
+#     string: string # Name/value pairs.
+# endregion
+
+# region Jobs
+# Normal Job
+# jobs:
+# - job: string # Required as first property. ID of the job.  ([-_A-Za-z0-9]*)
+#   displayName: string # Human-readable name for the job. 
+#   dependsOn: string | [ string ]  # Any jobs which must complete before this one
+#   condition: string # Evaluate this condition expression to determine whether to run this job. 
+#   continueOnError: string # Continue running even on failure?. 
+#   timeoutInMinutes: string # Time to wait for this job to complete before the server kills it. 
+#   cancelTimeoutInMinutes: string # Time to wait for the job to cancel before forcibly terminating it. 
+#   variables: variables # Job-specific variables
+#   strategy: jobStrategy # Execution strategy for this job
+#   pool: pool # Pool where this job will run
+#   container: jobContainer # Container resource name
+#   services:  # Container resources to run as a service container.
+#     string: string # Name/value pairs.
+#   workspace:  # Workspace options on the agent.
+#     clean: string # Which parts of the workspace should be scorched before fetching.  (outputs, resources, all)
+#   uses:  # Any resources required by this job that are not already referenced
+#     repositories: [ string ] # Repository references 
+#     pools: [ string ] # Pool references 
+#   steps: [ task | script | powershell | pwsh | bash | checkout | download | downloadBuild | getPackage | publish | template | restoreCache | saveCache | reviewApp ]
+
+# Deployment Job
+# jobs:
+# - deployment: string # Required as first property. Name of the deployment job, A-Z, a-z, 0-9, and underscore. The word deploy is a keyword and is unsupported as the deployment name.. 
+#   displayName: string # Human-readable name for the deployment. 
+#   dependsOn: string | [ string ]  # Any jobs which must complete before this one
+#   condition: string # Evaluate this condition expression to determine whether to run this deployment. 
+#   continueOnError: string # Continue running even on failure?. 
+#   timeoutInMinutes: string # Time to wait for this job to complete before the server kills it. 
+#   cancelTimeoutInMinutes: string # Time to wait for the job to cancel before forcibly terminating it. 
+#   variables: variables # Deployment-specific variables
+#   pool: pool # Pool where this job will run
+#   environment: deploymentEnvironment # Target environment name and optionally a resource name to record the deployment history; format: environment-name.resource-name.
+#   strategy: deploymentStrategy # Execution strategy for this deployment
+#   workspace:  # Workspace options on the agent.
+#     clean: string # Which parts of the workspace should be scorched before fetching.  (outputs, resources, all)
+#   uses:  # Any resources required by this job that are not already referenced
+#     repositories: [ string ] # Repository references 
+#     pools: [ string ] # Pool references 
+#   container: jobContainer # Container resource name
+#   services:  # Container resources to run as a service container.
+#     string: string # Name/value pairs.
+
+# Template Job
+# jobs:
+# - template: string # Required as first property. Reference to a template for this deployment. 
+#   parameters:  # Parameters used in a deployment template
+#     string: string # Name/value pairs.
+
+# endregion
+
+#region Steps
+# All steps, regardless of whether they're documented in this article, support the following properties:
+
+#     displayName
+#     name
+#     condition
+#     continueOnError
+#     enabled
+#     env
+#     timeoutInMinutes
+# https://docs.microsoft.com/en-us/azure/devops/pipelines/yaml-schema/steps?view=azure-pipelines
+
+# endregion
+
+# region Example
+
+# trigger:
+# - main
+
+# pool: 
+#   vmImage: ubuntu-latest
+
+# stages:
+# - stage: CI
+#   jobs:
+#   - job: CIWork
+#     steps:
+#     - script: "Do CI work"
+
+# - stage: Test
+#   jobs:
+#   - job: TestWork
+#     steps:
+#     - script: "Do test work"
+# endregion
